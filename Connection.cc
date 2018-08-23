@@ -16,14 +16,17 @@
 #include "binary_protocol.h"
 #include "util.h"
 
+// 01
+#include <zmq.hpp>
+
 /**
  * Create a new connection to a server endpoint.
  */
 Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
                        string _hostname, string _port, options_t _options,
-                       bool sampling) :
+                       bool sampling, string _report_port, bool _isagent) :
   start_time(0), stats(sampling), options(_options),
-  hostname(_hostname), port(_port), base(_base), evdns(_evdns)
+  hostname(_hostname), port(_port), base(_base), evdns(_evdns), isagent(_isagent), report_port(_report_port)
 {
   valuesize = createGenerator(options.valuesize);
   keysize = createGenerator(options.keysize);
@@ -65,6 +68,9 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
  * Destroy a connection, performing cleanup.
  */
 Connection::~Connection() {
+  if(stats.sampling && !isagent) { 
+    report_stats();
+  }
   event_free(timer);
   timer = NULL;
   // FIXME:  W("Drain op_q?");
@@ -210,6 +216,33 @@ void Connection::pop_op() {
 }
 
 /**
+ * 01
+ * Report stats to ther server.
+ */
+int Connection::report_stats() {
+	V("reporting stats.\n");
+	V("hostname:%s, report_port:%s\n", hostname.c_str(), report_port.c_str());
+	zmq::context_t context(1);	
+	zmq::socket_t *s = new zmq::socket_t(context, ZMQ_REQ);
+	string host = string("tcp://") + hostname +
+		string(":") + report_port;
+	s->connect(host.c_str());
+    
+	zmq::message_t message(sizeof(double));
+  // send the 95th latency of this connection
+    double lat = stats.get_nth(95);
+	memcpy((void *) message.data(), &lat, sizeof(double));
+	s->send(message);
+	//s->close();	
+  // receive ack
+	zmq::message_t rep;
+	s->recv(&rep);
+	s->close();
+	V("reported stats.\n");
+	return 1;
+}
+
+/**
  * Finish up (record stats) an operation that just returned from the
  * server.
  */
@@ -293,7 +326,10 @@ void Connection::drive_write_machine(double now) {
   double delay;
   struct timeval tv;
 
-  if (check_exit_condition(now)) return;
+  if (check_exit_condition(now)) {
+    // 01 check if it is the master thread in the master node and report stats 
+    return;
+  }
 
   while (1) {
     switch (write_state) {
@@ -439,7 +475,9 @@ void Connection::write_callback() {}
 /**
  * Callback for timer timeouts.
  */
-void Connection::timer_callback() { drive_write_machine(); }
+void Connection::timer_callback() { 
+	drive_write_machine(); 
+}
 
 
 /* The follow are C trampolines for libevent callbacks. */
