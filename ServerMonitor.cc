@@ -30,7 +30,6 @@ static bool s_send (zmq::socket_t &socket, const std::string &string) {
 
 int main(int argc, char **argv) {
 	zmq::context_t context(1);
-
 	zmq::socket_t socket(context, ZMQ_REP);
 	string port, wait_time;
 	if(argc < 2) {
