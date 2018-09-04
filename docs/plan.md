@@ -40,3 +40,52 @@ Same as ones in Heracles paper.
 #### Monitoring Logic
 
 We need a monitoring logic for each resource which is accessible through C code.
+
+
+
+#### Files
+
+TopLevelController.cc
+
+CoreMemController.cc
+
+CPUPowerController.cc
+
+NetworkController.cc
+
+Task.h
+
+
+
+#### CPUPowerController
+
+##### to monitor CPU power
+
+use RAPL 
+
+```shell
+sudo perf stat -a -e power/energy-pkg/
+```
+
+per-core DVFS uses `cpupower frequency-set/frequency-info` .
+
+##### to list all frequency information
+
+```shell
+sudo turbostat
+```
+
+or
+
+```shell
+cpupower -c all frequency-info --freq
+```
+
+TDP = 105W
+
+##### to set frequency information
+
+- disable the current driver: add `intel_pstate=passive` to your kernel boot line(/etc/default/grub, sudo update-grub)
+- boot, then set the governor: `cpupower frequency-set --governor ondemand`
+- set the frequency: `cpupower --cpu all frequency-set --freq 800MHz`
+

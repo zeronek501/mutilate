@@ -5,6 +5,8 @@
 #include <cstring>
 #include <vector>
 
+#include "CoreMemController.h"
+
 using namespace std;
 
 int s_write(string filepath, string value) {
@@ -42,6 +44,46 @@ int s_read(string filepath, string &value) {
 	return 0;
 }
 
+void Cores::alloc_cpuset(string cgroup, string value) {
+	string cpus_path;
+	cpus_path = string("/sys/fs/cgroup/cpuset/") + cgroup + string("/cpuset.cpus");
+	if(s_write(cpus_path, new_cpus)) {
+		fprintf(stderr, "alloc_cpuset error\n");
+		exit(1);
+	}
+}
+
+void Cores::add(int amt) {
+	string newcpus;
+	if(cmin == 0) // change cmax
+		cmax = MIN(CORE_NUM, cmax + amt);
+	else // change cmin
+		cmin = MAX(0, cmin - amt);
+	newcpus = string(cmin) + "-" + string(cmax);
+	alloc_cpuset(tasks->cgroup, newcpus);
+}
+
+void Cores::remove(int amt) {
+	string newcpus;
+	if(cmin == 0) // change cmax
+		cmax = MAX(cmin, cmax - amt);
+	else // change cmin
+		cmin = MIN(cmax, cmin + amt);
+	newcpus = string(cmin) + "-" + string(cmax);
+	alloc_cpuset(tasks->cgroup, newcpus);
+}
+
+string Cores::cpus() {
+	string cpus_path;
+	string cpus;
+	cpus_path = string("/sys/fs/cgroup/cpuset/")+cgroup+string("/cpuset.cpus");
+	if(s_read(cpus_path, cpus)) {
+		fprintf(stderr, "cpus read error\n");
+		exit(1);
+	}
+	return cpus;
+}
+/*
 int inc_cpuset(string cgroup, int rightward) {
 	string cpus_path;
 	string cpus;
@@ -105,7 +147,6 @@ int dec_cpuset(string cgroup, int rightward) {
 		return 2;
 	}
 }	
-
 int main(int argc, char **argv) {
 	string s;
 	s_read("/sys/fs/cgroup/cpuset/test1/cpuset.cpus", s);
@@ -117,3 +158,4 @@ int main(int argc, char **argv) {
 	s_read("/sys/fs/cgroup/cpuset/test1/cpuset.cpus", s);
 	printf("%s\n", s.c_str());
 }	
+*/
