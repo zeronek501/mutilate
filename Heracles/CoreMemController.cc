@@ -8,12 +8,20 @@
 #include "CoreMemController.h"
 #include "Cores.h"
 
+// grow status
 #define GROW_CORES 0
 #define GROW_LLC 1
 
+// BE status
+#define CAN_GROW 0
+#define CANNOT_GROW 1
+#define DISABLED 2
+
+#define DRAM_LIMIT 10000 // arbitrary value
+
 using namespace std;
 
-CoreMemController::CoreMemController(Task *_lc_task, Task *_be_task) : lc_task(_lc_task), be_task(_be_task) {
+CoreMemController::CoreMemController(Task *_lc_task, Task *_be_task, pthread_mutex_t &_mutex, int &_be_status) : lc_task(_lc_task), be_task(_be_task), mutex(_mutex), be_status(_be_status)  {
 	lc_cores = new Cores(0, 13, lc_task);
 	be_cores = new Cores(14, 27, be_task);
 	lc_llc = new LLC(0, 9, lc_task);
@@ -26,6 +34,43 @@ CoreMemController::~CoreMemController() {
 	delete be_llc;
 }
 
-CoreMemController::init() {
+CoreMemController::be_can_grow() {
+}
+
+CoreMemController::be_bw_per_core() {
+	return 2000; //arbitrary value
+}
+
+CoreMemController::start_loop() {
+	int local_be_status;
+
+	while(true) {
+		pthread_mutex_lock(&mutex);
+		local_be_status = be_status;
+		pthread_mutex_unlock(&mutex);
+		if(local_be_status == DISABLED) {
+			//disable_be()
+		}
+		else {
+			total_bw = measure_dram_bw();
+			if(total_bw > DRAM_LIMIT) {
+				overage = total_bw - DRAM_LIMIT;
+				be_cores->remove(overage/be_bw_per_core());
+				continue; // FIXME: sleep(2) might be necessary here
+			}
+			if(local_be_status == CANNOT_GROW) {
+				continue; // FIXME: sleep(2) might be necessary here
+			}
+			//local_be_status == CAN_GROW
+			if(grow_status == GROW_LLC) {
+				
+			}
+			else if(grow_status == GROW_CORES) {
+
+			}
+			sleep(2);
+		}
+	}
 }
 	
+

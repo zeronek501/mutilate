@@ -11,6 +11,6 @@ class Task {
 	Task(std::string _cgroup, std::string _cos) : cgroup(_cgroup), cos(_cos)
 	{
 	}
-}
+};
 
 #endif

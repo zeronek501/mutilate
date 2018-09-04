@@ -17,5 +17,5 @@ public:
 
 private:
 	void alloc_ways(std::string cos, std::string value);
-}
+};
 #endif

@@ -30,7 +30,7 @@ double target_lat = 100, slack = -1;
 CoreMemController *cm;
 Task *lc, *be;
 
-int g_be_can_grow = CAN_GROW;
+int g_be_status = CAN_GROW;
 
 // pthread
 pthread_mutex_t l_mutex; // mutex for latency poll
@@ -52,7 +52,7 @@ void init() {
 	be = new Task("be", "be");	
 	
 	// Init Controller instances
-	cm = new CoreMemController(lc, be); 
+	cm = new CoreMemController(lc, be, s_mutex, g_be_status); 
 
 	// Init socket settings
 	zmq::context_t context(1);
@@ -97,19 +97,19 @@ void poll(double &_lat, double &_load) {
 
 void enable_be() {
 	pthread_mutex_lock(&s_mutex);
-	g_be_can_grow = CAN_GROW;
+	g_be_status = CAN_GROW;
 	pthread_mutex_unlock(&s_mutex);
 }
 
 void disallow_be_growth() {
 	pthread_mutex_lock(&s_mutex);
-	g_be_can_grow = CANNOT_GROW;
+	g_be_status = CANNOT_GROW;
 	pthread_mutex_unlock(&s_mutex);
 }
 
 void disable_be() {
 	pthread_mutex_lock(&s_mutex);
-	g_be_can_grow = DISABLED;
+	g_be_status = DISABLED;
 	pthread_mutex_unlock(&s_mutex);
 }
 
@@ -138,20 +138,13 @@ void top_control() {
 }
 
 void core_mem_control() {
-	int be_can_grow;
 	pthread_mutex_lock(&l_mutex);
 	while(lat == -1) {
 		pthread_cond_wait(&cond, &l_mutex);
 	}
 	pthread_mutex_unlock(&l_mutex);
 
-	while(true) {
-		pthread_mutex_lock(&s_mutex);
-		be_can_grow = g_be_can_grow;
-		pthread_mutex_unlock(&s_mutex);
-		cm->start_loop(be_can_grow);		
-		sleep(5);
-	}
+	cm->start_loop();
 }
 	
 int main(int argc, char **argv) {
