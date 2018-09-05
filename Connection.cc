@@ -68,6 +68,7 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
  * Destroy a connection, performing cleanup.
  */
 Connection::~Connection() {
+  // 01 report stats when master connection is destroyed.
   if(stats.sampling && !isagent) { 
     report_stats();
   }
@@ -229,13 +230,21 @@ int Connection::report_stats() {
 	s->connect(host.c_str());
     
 	zmq::message_t message(sizeof(double));
-  // send the 95th latency of this connection
+	zmq::message_t message2(sizeof(double));
+	zmq::message_t rep;
+    // send the 95th latency of this connection
     double lat = stats.get_nth(95);
+	V("nth:%f\n", lat);
 	memcpy((void *) message.data(), &lat, sizeof(double));
 	s->send(message);
-	//s->close();	
-  // receive ack
-	zmq::message_t rep;
+    // receive ack
+	s->recv(&rep);
+	// send the qps
+	double qps = stats.get_qps();
+	V("qps:%f\n", qps);
+	memcpy((void *) message2.data(), &qps, sizeof(double));
+	s->send(message2);
+    // receive ack
 	s->recv(&rep);
 	s->close();
 	V("reported stats.\n");

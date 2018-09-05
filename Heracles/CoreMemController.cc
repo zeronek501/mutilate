@@ -4,9 +4,12 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <pthread.h>
 
 #include "CoreMemController.h"
 #include "Cores.h"
+#include "LLC.h"
+#include "Task.h"
 
 // grow status
 #define GROW_CORES 0
@@ -33,16 +36,13 @@ CoreMemController::~CoreMemController() {
 	delete lc_llc;
 	delete be_llc;
 }
-
-CoreMemController::be_can_grow() {
+double CoreMemController::measure_dram_bw() {
+	return 10000;
 }
 
-CoreMemController::be_bw_per_core() {
-	return 2000; //arbitrary value
-}
-
-CoreMemController::start_loop() {
+void CoreMemController::start_loop() {
 	int local_be_status;
+	double overage;
 
 	while(true) {
 		pthread_mutex_lock(&mutex);
@@ -55,7 +55,7 @@ CoreMemController::start_loop() {
 			total_bw = measure_dram_bw();
 			if(total_bw > DRAM_LIMIT) {
 				overage = total_bw - DRAM_LIMIT;
-				be_cores->remove(overage/be_bw_per_core());
+				be_cores->remove(1);
 				continue; // FIXME: sleep(2) might be necessary here
 			}
 			if(local_be_status == CANNOT_GROW) {

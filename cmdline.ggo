@@ -31,6 +31,7 @@ text "\nAdvanced options:"
 
 option "username" U "Username to use for SASL authentication." string
 option "password" P "Password to use for SASL authentication." string
+option "number" n "Number of repetition." int default="1"
 option "threads" T "Number of threads to spawn." int default="1"
 option "affinity" - "Set CPU affinity for threads, round-robin"
 option "connections" c "Connections to establish per server." int default="1"

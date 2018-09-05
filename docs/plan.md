@@ -55,6 +55,10 @@ NetworkController.cc
 
 Task.h
 
+Cores.cc
+
+LLC.cc
+
 
 
 #### CPUPowerController
@@ -88,4 +92,18 @@ TDP = 105W
 - disable the current driver: add `intel_pstate=passive` to your kernel boot line(/etc/default/grub, sudo update-grub)
 - boot, then set the governor: `cpupower frequency-set --governor ondemand`
 - set the frequency: `cpupower --cpu all frequency-set --freq 800MHz`
+
+
+
+#### CoreMemController
+
+##### to measure BW
+
+use Intel's pcm
+
+```shell
+sudo ./pcm.x -i = 1
+```
+
+
 

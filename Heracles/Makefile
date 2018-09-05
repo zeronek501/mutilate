@@ -5,19 +5,22 @@ LDFLAGS = -lpthread
 
 all : Heracles
 
-Heracles : TopLevelController.o CoreMemController.o CPUPowerController.o NetworkController.o Cores.o
+Heracles : TopLevelController.o CoreMemController.o Cores.o LLC.o Util.o 
 	$(LD) $(LDFLAGS) -o $@ $^
 
-TopLevelController.o : TopLevelController.cc CoreMemController.h CPUPowerController.h NetworkController.h
+TopLevelController.o : TopLevelController.cc CoreMemController.h Task.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-CoreMemController.o : CoreMemController.cc Cores.h
+CoreMemController.o : CoreMemController.cc CoreMemController.h Cores.h LLC.h Task.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-CPUPowerController.o : CPUPowerController.cc Cores.h
+Cores.o : Cores.cc Cores.h Util.h Task.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-NetworkController.o : NetworkController.cc Cores.h
+LLC.o : LLC.cc LLC.h Util.h Task.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+Util.o : Util.cc Util.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 clean :

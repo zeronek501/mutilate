@@ -52,4 +52,3 @@ env.Program(target='mutilate', source=src)
 env.Program(target='gtest', source=['TestGenerator.cc', 'log.cc', 'util.cc',
                                     'Generator.cc'])
 env.Program(target='server_monitor', source=['ServerMonitor.cc'])
-env.Program(target='resource_controller', source=['ResourceController.cc'])

@@ -1,4 +1,5 @@
 #include <string>
+#include <cstdlib>
 
 #include "Cores.h"
 #include "Util.h"
@@ -10,7 +11,7 @@ using namespace std;
 
 Cores::Cores(int _cmin, int _cmax, Task *_task) : cmin(_cmin), cmax(_cmax), task(_task) {
 	string cpus;
-	cpus = string(cmin) + "-" + string(cmax);
+	cpus = to_string(cmin) + "-" + to_string(cmax);
 	alloc_cpuset(task->cgroup, cpus);
 }
 
@@ -26,11 +27,13 @@ void Cores::alloc_cpuset(string cgroup, string value) {
 
 void Cores::add(int amt) {
 	string newcpus;
-	if(cmin == 0) // change cmax
+	if(cmin == 0) { // change cmax
 		cmax = MIN(CORE_NUM, cmax + amt);
-	else // change cmin
+	}
+	else { // change cmin
 		cmin = MAX(0, cmin - amt);
-	newcpus = string(cmin) + "-" + string(cmax); 
+	}
+	newcpus = to_string(cmin) + "-" + to_string(cmax); 
 	alloc_cpuset(task->cgroup, newcpus);
 }
 int Cores::size() {
@@ -40,18 +43,20 @@ int Cores::size() {
 void Cores::remove(int amt) {
 	if(amt <= 0) return;
 	string newcpus;
-	if(cmin == 0) // change cmax
+	if(cmin == 0) { // change cmax
 		cmax = MAX(cmin, cmax - amt);
-	else // change cmin
+	}
+	else { // change cmin
 		cmin = MIN(cmax, cmin + amt);
-	newcpus = string(cmin) + "-" + string(cmax);
+	}
+	newcpus = to_string(cmin) + "-" + to_string(cmax);
 	alloc_cpuset(task->cgroup, newcpus);
 }
 
 string Cores::cpus() {
 	string cpus_path;
 	string cpus;
-	cpus_path = string("/sys/fs/cgroup/cpuset/") + cgroup + string("/cpuset.cpus");
+	cpus_path = string("/sys/fs/cgroup/cpuset/") + task->cgroup + string("/cpuset.cpus");
 	if(s_read(cpus_path, cpus)) {
 		fprintf(stderr, "cpus read error\n");
 		exit(1);

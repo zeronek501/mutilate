@@ -645,6 +645,8 @@ void go(const vector<string>& servers, options_t& options,
 , zmq::socket_t* socket
 #endif
 ) {
+for(int j = 0; j < args.number_arg; j++) {
+  stats = ConnectionStats();
 #ifdef HAVE_LIBZMQ
   if (args.agent_given > 0) {
     prep_agent(servers, options);
@@ -744,6 +746,7 @@ void go(const vector<string>& servers, options_t& options,
     finish_agent(stats);
   }
 #endif
+}
 }
 
 void* thread_main(void *arg) {
@@ -1013,6 +1016,8 @@ void do_mutilate(const vector<string>& servers, options_t& options,
   // Tear-down and accumulate stats.
   for (Connection *conn: connections) {
     stats.accumulate(conn->stats);
+	conn->stats.start = start;
+  	conn->stats.stop = now;
     delete conn;
   }
 
