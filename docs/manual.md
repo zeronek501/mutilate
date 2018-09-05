@@ -21,6 +21,8 @@ cmdline parameter "n" is added and it means the number of repetition.
 
 #### how to do a simple test
 
+(self-test)
+
 run 
 
 ```shell
@@ -33,9 +35,23 @@ then,
 ./mutilate -s localhost -n 5
 ```
 
-
-
 server_monitor prints latency and qps every cycle.
+
+
+
+(multi-node test)
+
+fixing some problems
+
+```shell
+master>
+```
+
+
+
+
+
+
 
 
 
