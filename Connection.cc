@@ -16,17 +16,15 @@
 #include "binary_protocol.h"
 #include "util.h"
 
-// 01
-#include <zmq.hpp>
 
 /**
  * Create a new connection to a server endpoint.
  */
 Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
                        string _hostname, string _port, options_t _options,
-                       bool sampling, string _report_port, bool _isagent) :
+                       bool sampling) :
   start_time(0), stats(sampling), options(_options),
-  hostname(_hostname), port(_port), base(_base), evdns(_evdns), isagent(_isagent), report_port(_report_port)
+  hostname(_hostname), port(_port), base(_base), evdns(_evdns)
 {
   valuesize = createGenerator(options.valuesize);
   keysize = createGenerator(options.keysize);
@@ -68,10 +66,6 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
  * Destroy a connection, performing cleanup.
  */
 Connection::~Connection() {
-  // 01 report stats when master connection is destroyed.
-  if(stats.sampling && !isagent) { 
-    report_stats();
-  }
   event_free(timer);
   timer = NULL;
   // FIXME:  W("Drain op_q?");
@@ -217,41 +211,6 @@ void Connection::pop_op() {
 }
 
 /**
- * 01
- * Report stats to ther server.
- */
-int Connection::report_stats() {
-	V("reporting stats.\n");
-	V("hostname:%s, report_port:%s\n", hostname.c_str(), report_port.c_str());
-	zmq::context_t context(1);	
-	zmq::socket_t *s = new zmq::socket_t(context, ZMQ_REQ);
-	string host = string("tcp://") + hostname +
-		string(":") + report_port;
-	s->connect(host.c_str());
-    
-	zmq::message_t message(sizeof(double));
-	zmq::message_t message2(sizeof(double));
-	zmq::message_t rep;
-    // send the 95th latency of this connection
-    double lat = stats.get_nth(95);
-	V("nth:%f\n", lat);
-	memcpy((void *) message.data(), &lat, sizeof(double));
-	s->send(message);
-    // receive ack
-	s->recv(&rep);
-	// send the qps
-	double qps = stats.get_qps();
-	V("qps:%f\n", qps);
-	memcpy((void *) message2.data(), &qps, sizeof(double));
-	s->send(message2);
-    // receive ack
-	s->recv(&rep);
-	s->close();
-	V("reported stats.\n");
-	return 1;
-}
-
-/**
  * Finish up (record stats) an operation that just returned from the
  * server.
  */
@@ -336,7 +295,6 @@ void Connection::drive_write_machine(double now) {
   struct timeval tv;
 
   if (check_exit_condition(now)) {
-    // 01 check if it is the master thread in the master node and report stats 
     return;
   }
 

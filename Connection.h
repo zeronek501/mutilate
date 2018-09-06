@@ -33,7 +33,7 @@ class Connection {
 public:
   Connection(struct event_base* _base, struct evdns_base* _evdns,
              string _hostname, string _port, options_t options,
-             bool sampling = true, string _report_port="10123", bool _isagent = false); // 01 added _isagent and _report_port
+             bool sampling = true); 
   ~Connection();
 
   double start_time; // Time when this connection began operations.
@@ -68,8 +68,6 @@ private:
   double last_rx;      // Used to moderate transmission rate.
   double last_tx;
 
-  string report_port;
-  bool isagent; // 01
 
   enum read_state_enum {
     INIT_READ,
@@ -123,8 +121,6 @@ private:
   bool consume_binary_response(evbuffer *input);
   bool consume_ascii_line(evbuffer *input, bool &done);
 
-  // 01
-  int report_stats();
 };
 
 #endif
