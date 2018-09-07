@@ -218,6 +218,9 @@ void agent() {
 
     socket.recv(&request);
     options.lambda_denom = *((int *) request.data());
+    s_send(socket, "ACK");
+    socket.recv(&request);
+    options.number = *((int *) request.data());
     s_send(socket, "THANKS");
 
     //    V("AGENT SLEEPS"); sleep(1);
@@ -304,9 +307,13 @@ void prep_agent(const vector<string>& servers, options_t& options) {
 
   for (auto s: agent_sockets) {
     zmq::message_t message(sizeof(sum));
+    zmq::message_t message2(sizeof(options.number));
     *((int *) message.data()) = sum;
+    *((int *) message2.data()) = options.number;
     s->send(message);
     string rep = s_recv(*s);
+    s->send(message2);
+    rep = s_recv(*s);
   }
 
   // Master sleeps here to give agents a chance to connect to
@@ -677,7 +684,7 @@ void go(const vector<string>& servers, options_t& options,
 , zmq::socket_t* socket
 #endif
 ) {
-for(int j = 0; j < args.number_arg; j++) {
+for(int j = 0; j < options.number; j++) {
   stats = ConnectionStats();
 #ifdef HAVE_LIBZMQ
   if (args.agent_given > 0) {
@@ -1071,6 +1078,7 @@ void args_to_options(options_t* options) {
   options->blocking = args.blocking_given;
   options->qps = args.qps_arg;
   options->threads = args.threads_arg;
+  options->number = args.number_arg;
   options->server_given = args.server_given;
   options->roundrobin = args.roundrobin_given;
 

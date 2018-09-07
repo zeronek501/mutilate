@@ -31,6 +31,7 @@ typedef struct {
   bool no_nodelay;
   bool noload;
   int threads;
+  int number;
   enum distribution_t iadist;
   int warmup;
   bool skip;
