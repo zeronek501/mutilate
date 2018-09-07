@@ -61,6 +61,24 @@ LLC.cc
 
 
 
+#### CoreMemController
+
+##### to measure BW (for later use)
+
+use Intel's pcm
+
+```shell
+sudo ./pcm.x -i = 1
+```
+
+
+
+
+
+
+
+
+
 #### CPUPowerController
 
 ##### to monitor CPU power
@@ -92,18 +110,4 @@ TDP = 105W
 - disable the current driver: add `intel_pstate=passive` to your kernel boot line(/etc/default/grub, sudo update-grub)
 - boot, then set the governor: `cpupower frequency-set --governor ondemand`
 - set the frequency: `cpupower --cpu all frequency-set --freq 800MHz`
-
-
-
-#### CoreMemController
-
-##### to measure BW
-
-use Intel's pcm
-
-```shell
-sudo ./pcm.x -i = 1
-```
-
-
 

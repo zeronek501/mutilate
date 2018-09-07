@@ -41,11 +41,16 @@ server_monitor prints latency and qps every cycle.
 
 (multi-node test)
 
-fixing some problems
-
 ```shell
-master>
+server(janux-05)> memcached -t 4 -c 32768 -p 11212
+
+agent1(janux-01)> mutilate -T 16 -A
+
+master(janux-00)> mutilate -s janux-05:11212 --loadonly
+master(janux-00)> mutilate -s janux-05:11212 --noload -B -T 16 -a janux-01 -c 4 -q 200000
 ```
+
+reference : https://github.com/leverich/mutilate
 
 
 

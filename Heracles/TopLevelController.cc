@@ -155,7 +155,6 @@ void init() {
 
 	pthread_join(top_level, (void **)&status);
 	printf("Top Thread End %d\n", status);
-	
 
 }
 

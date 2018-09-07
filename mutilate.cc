@@ -99,6 +99,7 @@ static bool s_send (zmq::socket_t &socket, const std::string &string) {
   return socket.send(message);
 }
 
+
 /*
  * Agent protocol
  *
@@ -576,7 +577,8 @@ int main(int argc, char **argv) {
     }
 
     }
-  } else if (args.scan_given) {
+  } // end search_given 
+  else if (args.scan_given) {
     char *min_ptr = strtok(args.scan_arg, ":");
     char *max_ptr = strtok(NULL, ":");
     char *step_ptr = strtok(NULL, ":");
@@ -609,8 +611,16 @@ int main(int argc, char **argv) {
       printf(" %8.1f", stats.get_qps());
       printf(" %8d\n", q);
     }    
-  } else {
-    go(servers, options, stats);
+  } // end scan_given
+  else { // !scan_given && !search_given
+    for(int j = 0; j < args.number_arg; j++) {
+	  options_t options_back = options;
+      //memcpy(&options_back, &options, sizeof(options));
+      stats = ConnectionStats();
+      go(servers, options, stats);
+      //memcpy(&options, &options_back, sizeof(options_back));
+	  options = options_back;
+	}
   }
 
   if (!args.scan_given && !args.loadonly_given) {
@@ -677,8 +687,6 @@ void go(const vector<string>& servers, options_t& options,
 , zmq::socket_t* socket
 #endif
 ) {
-for(int j = 0; j < args.number_arg; j++) {
-  stats = ConnectionStats();
 #ifdef HAVE_LIBZMQ
   if (args.agent_given > 0) {
     prep_agent(servers, options);
@@ -774,15 +782,13 @@ for(int j = 0; j < args.number_arg; j++) {
     V("Local QPS = %.1f (%d / %.1fs)",
       total / (stats.stop - stats.start),
       total, stats.stop - stats.start);    
+    
+	finish_agent(stats);
 
-    finish_agent(stats);
+    char *saveptr = NULL;  // For reentrant strtok().
+	report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
   }
 #endif
-  char *saveptr = NULL;  // For reentrant strtok().
-  if (args.agent_given > 0) {
-	  report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
-  }
-}
 }
 
 
