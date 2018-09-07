@@ -781,8 +781,9 @@ for(int j = 0; j < args.number_arg; j++) {
 
 char *saveptr = NULL;  // For reentrant strtok().
 //printf("host:%s\n", strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
-
-report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
+if(!args.agentmode_given) {
+  report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
+}
 }
 }
 
