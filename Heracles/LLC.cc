@@ -68,7 +68,6 @@ string LLC::calc_ways() {
 			bits += 1;
 		}
 	}
-	cout << "bits: " << std::hex << bits << endl;
 	stringstream sstream;
 	sstream << std::hex << bits;
 	return sstream.str();
