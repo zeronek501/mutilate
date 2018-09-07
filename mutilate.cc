@@ -297,6 +297,38 @@ void finish_agent(ConnectionStats &stats) {
   }
 }
 
+int report_stats(ConnectionStats stats, string hostname) {
+	string report_port = "10123";
+	V("reporting stats.\n");
+	V("hostname:%s, report_port:%s\n", hostname.c_str(), report_port.c_str());
+	zmq::context_t context(1);	
+	zmq::socket_t *s = new zmq::socket_t(context, ZMQ_REQ);
+	string host = string("tcp://") + hostname +
+		string(":") + report_port;
+	s->connect(host.c_str());
+    
+	zmq::message_t message(sizeof(double));
+	zmq::message_t message2(sizeof(double));
+	zmq::message_t rep;
+    // send the 95th latency of this connection
+    double lat = stats.get_nth(95);
+	V("nth:%f\n", lat);
+	memcpy((void *) message.data(), &lat, sizeof(double));
+	s->send(message);
+    // receive ack
+	s->recv(&rep);
+	// send the qps
+	double qps = stats.get_qps();
+	V("qps:%f\n", qps);
+	memcpy((void *) message2.data(), &qps, sizeof(double));
+	s->send(message2);
+    // receive ack
+	s->recv(&rep);
+	s->close();
+	V("reported stats.\n");
+	return 1;
+}
+
 /*
  * This synchronization routine is ridiculous because the master only
  * has a ZMQ_REQ socket to the agents, but it needs to wait for a
@@ -727,7 +759,7 @@ for(int j = 0; j < args.number_arg; j++) {
 , socket
 #endif
 );
-  } else {
+  } else { // options.threads == 0
 #ifdef HAVE_LIBZMQ
     if (args.agent_given) {
       sync_agent(socket);
@@ -746,8 +778,13 @@ for(int j = 0; j < args.number_arg; j++) {
     finish_agent(stats);
   }
 #endif
+  char *saveptr = NULL;  // For reentrant strtok().
+  if (args.agent_given > 0) {
+	  report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
+  }
 }
 }
+
 
 void* thread_main(void *arg) {
   struct thread_data *td = (struct thread_data *) arg;
@@ -823,7 +860,7 @@ void do_mutilate(const vector<string>& servers, options_t& options,
     for (int c = 0; c < conns; c++) {
       Connection* conn = new Connection(base, evdns, hostname, port, options,
                                         args.agentmode_given ? false :
-                                        true, "10123", master);
+                                        true);
       connections.push_back(conn);
       if (c == 0) server_lead.push_back(conn);
     }
@@ -1016,8 +1053,6 @@ void do_mutilate(const vector<string>& servers, options_t& options,
   // Tear-down and accumulate stats.
   for (Connection *conn: connections) {
     stats.accumulate(conn->stats);
-	conn->stats.start = start;
-  	conn->stats.stop = now;
     delete conn;
   }
 
