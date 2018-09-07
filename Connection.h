@@ -33,7 +33,7 @@ class Connection {
 public:
   Connection(struct event_base* _base, struct evdns_base* _evdns,
              string _hostname, string _port, options_t options,
-             bool sampling = true, string _report_port="10123", bool _isagent = false); // 01 added _isagent and _report_port
+             bool sampling = true, string _report_port="10123", bool _ismasterthread = false); // 01 added _ismasterthread and _report_port
   ~Connection();
 
   double start_time; // Time when this connection began operations.
@@ -69,7 +69,7 @@ private:
   double last_tx;
 
   string report_port;
-  bool isagent; // 01
+  bool ismasterthread; // 01
 
   enum read_state_enum {
     INIT_READ,

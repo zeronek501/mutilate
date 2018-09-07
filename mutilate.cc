@@ -823,7 +823,7 @@ void do_mutilate(const vector<string>& servers, options_t& options,
     for (int c = 0; c < conns; c++) {
       Connection* conn = new Connection(base, evdns, hostname, port, options,
                                         args.agentmode_given ? false :
-                                        true);
+                                        true, "10123", master);
       connections.push_back(conn);
       if (c == 0) server_lead.push_back(conn);
     }

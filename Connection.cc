@@ -24,9 +24,9 @@
  */
 Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
                        string _hostname, string _port, options_t _options,
-                       bool sampling, string _report_port, bool _isagent) :
+                       bool sampling, string _report_port, bool _ismasterthread) :
   start_time(0), stats(sampling), options(_options),
-  hostname(_hostname), port(_port), base(_base), evdns(_evdns), isagent(_isagent), report_port(_report_port)
+  hostname(_hostname), port(_port), base(_base), evdns(_evdns), ismasterthread(_ismasterthread), report_port(_report_port)
 {
   valuesize = createGenerator(options.valuesize);
   keysize = createGenerator(options.keysize);
@@ -69,7 +69,7 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
  */
 Connection::~Connection() {
   // 01 report stats when master connection is destroyed.
-  if(stats.sampling && !isagent) { 
+  if(stats.sampling && ismasterthread) { 
     report_stats();
   }
   event_free(timer);
