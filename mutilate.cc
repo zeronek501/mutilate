@@ -218,10 +218,8 @@ void agent() {
 
     socket.recv(&request);
     options.lambda_denom = *((int *) request.data());
-    s_send(socket, "ACK");
-    socket.recv(&request);
-    options.number = *((int *) request.data());
     s_send(socket, "THANKS");
+	V("number = %d\n", options.number);
 
     //    V("AGENT SLEEPS"); sleep(1);
     options.lambda = (double) options.qps / options.lambda_denom * args.lambda_mul_arg;
@@ -307,13 +305,10 @@ void prep_agent(const vector<string>& servers, options_t& options) {
 
   for (auto s: agent_sockets) {
     zmq::message_t message(sizeof(sum));
-    zmq::message_t message2(sizeof(options.number));
     *((int *) message.data()) = sum;
-    *((int *) message2.data()) = options.number;
     s->send(message);
     string rep = s_recv(*s);
-    s->send(message2);
-    rep = s_recv(*s);
+	V("number=%d", options.number);	
   }
 
   // Master sleeps here to give agents a chance to connect to
@@ -583,7 +578,8 @@ int main(int argc, char **argv) {
     }
 
     }
-  } else if (args.scan_given) {
+  } // end search_given 
+  else if (args.scan_given) {
     char *min_ptr = strtok(args.scan_arg, ":");
     char *max_ptr = strtok(NULL, ":");
     char *step_ptr = strtok(NULL, ":");
@@ -616,7 +612,8 @@ int main(int argc, char **argv) {
       printf(" %8.1f", stats.get_qps());
       printf(" %8d\n", q);
     }    
-  } else { // !scan_given && !search_given
+  } // end scan_given
+  else { // !scan_given && !search_given
     go(servers, options, stats);
   }
 
@@ -786,10 +783,10 @@ for(int j = 0; j < options.number; j++) {
   }
 #endif
 
-char *saveptr = NULL;  // For reentrant strtok().
+//char *saveptr = NULL;  // For reentrant strtok().
 //printf("host:%s\n", strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
 if(!args.agentmode_given) {
-  report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
+  //report_stats(stats, strtok_r(strdup(servers[0].c_str()), ":", &saveptr));
 }
 }
 }
