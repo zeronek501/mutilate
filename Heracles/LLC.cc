@@ -1,4 +1,5 @@
 
+#include <iostream>
 #include <string>
 #include <sstream>
 
@@ -62,11 +63,12 @@ string LLC::read_ways() {
 string LLC::calc_ways() {
 	int bits = 0, i;
 	for(i = 0;i < LLC_WAYS; i++) { 
+		bits*=2;
 		if(i >= cmin && i <= cmax) {
 			bits += 1;
 		}
-		bits << 1;
 	}
+	cout << "bits: " << std::hex << bits << endl;
 	stringstream sstream;
 	sstream << std::hex << bits;
 	return sstream.str();
