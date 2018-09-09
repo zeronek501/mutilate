@@ -13,7 +13,7 @@ using namespace std;
 
 LLC::LLC(int _cmin, int _cmax, Task * _task) : cmin(_cmin), cmax(_cmax), task(_task) {
 	string ways;
-	ways = string("L3:0=") + calc_ways();
+	ways = string("\x4c\x33\x3a\x30\x3d") + calc_ways();
 	alloc_ways(task->cos, ways);
 }
 
