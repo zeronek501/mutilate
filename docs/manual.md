@@ -54,6 +54,59 @@ reference : https://github.com/leverich/mutilate
 
 
 
+## Heracles
+
+#### initial setting and test
+
+ssh to janux-05
+
+```shell
+janux-05> sudo mkdir /sys/fs/cgroup/cpuset/lc
+janux-05> sudo mount -t resctrl resctrl /sys/fs/resctrl
+janux-05> sudo mkdir /sys/fs/resctrl/lc
+janux-05> cd ~/mutilate/Heracles
+janux-05> sudo ./TestCores
+janux-05> sudo ./TestLLC
+```
+
+#### TestCores
+
+use cgroup interface
+
+make a lc task and add and removes lc task's cores.
+
+Reads lc task's cores after each operation and checks if it is being done right.
+
+
+
+#### TestLLC
+
+use resctrl interface
+
+make a lc task and add and removes lc task's LLC ways.
+
+Reads lc task's LLC ways after each operation and checks if it is being done right.
+
+At first, I used iostream library in Util.cc s_write(), but it doesn't work in resctrl,  so I used system() function instead.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
