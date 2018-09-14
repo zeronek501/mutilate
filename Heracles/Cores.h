@@ -4,6 +4,8 @@
 #include <string>
 #include "Task.h"
 
+#define CORE_NUM 28
+
 class Cores {
 public:
 	int cmin;

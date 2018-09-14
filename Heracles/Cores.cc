@@ -6,7 +6,6 @@
 #include "Util.h"
 #include "Task.h"
 
-#define CORE_NUM 28
 
 using namespace std;
 

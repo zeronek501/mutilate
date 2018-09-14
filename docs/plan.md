@@ -68,12 +68,14 @@ LLC.cc
 use Intel's pcm
 
 ```shell
-sudo ./pcm.x -i = 1
+sudo ./pcm.x -i=1
 ```
 
 
 
+Maximum Memory Bandwidth = 38.4GB/s (76.8GB/s if channel=4)
 
+DRAM_LIMIT = 0.9 * 38.4 = 34.56GB/s
 
 
 

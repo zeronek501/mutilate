@@ -34,3 +34,5 @@ src = Split("TopLevelController.cc CoreMemController.cc Cores.cc LLC.cc Util.cc"
 env.Program(target='Heracles', source=src)
 env.Program(target='TestCores', source=["TestCores.cc", "Cores.cc", "Util.cc"])
 env.Program(target='TestLLC', source=["TestLLC.cc", "LLC.cc", "Util.cc"])
+env.Program(target='TestDRAM', source=["TestDRAM.cc"])
+

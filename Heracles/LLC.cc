@@ -7,7 +7,7 @@
 #include "Util.h"
 #include "Task.h"
 
-#define LLC_WAYS 20
+
 
 using namespace std;
 

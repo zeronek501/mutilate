@@ -13,6 +13,9 @@ public:
 	{
 		pids = std::vector<int>();
 	}
+	void add(int pid) {
+		pids.push_back(pid);
+	}
 };
 
 #endif

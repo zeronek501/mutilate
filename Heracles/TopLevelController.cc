@@ -33,12 +33,11 @@ double target_lat = 100, slack = -1;
 CoreMemController *cm;
 Task *lc, *be;
 
-int g_be_status = CAN_GROW;
+int g_be_status;
 
 // pthread
 pthread_mutex_t l_mutex; // mutex for latency poll
 pthread_cond_t cond;
-pthread_mutex_t s_mutex; // mutex for status poll
 
 //  Convert string to 0MQ string and send to socket
 static bool s_send (zmq::socket_t &_socket, const std::string &str) {
@@ -46,6 +45,24 @@ static bool s_send (zmq::socket_t &_socket, const std::string &str) {
   memcpy(message.data(), str.data(), str.size());
 
   return _socket.send(message);
+}
+
+void be_exec() {
+	std::string cmd;
+
+	for(int pid : be->pids) {
+		cmd = std::string("sudo kill -CONT ") + std::to_string(pid); // FIXME: preprocess pid string later
+		system(cmd.c_str());
+	}
+}
+
+void be_kill() {
+	std::string cmd;
+
+	for(int pid : be->pids) {
+		cmd = std::string("sudo kill -STOP ") + std::to_string(pid); // FIXME: preprocess pid string later
+		system(cmd.c_str());
+	}
 }
 
 void poll(double &_lat, double &_load) {
@@ -63,28 +80,26 @@ void poll(double &_lat, double &_load) {
 
 void enable_be() {
 	printf("enable_be\n");
-	pthread_mutex_lock(&s_mutex);
+	be_exec();
+	cm->set_be(be);
 	g_be_status = CAN_GROW;
-	pthread_mutex_unlock(&s_mutex);
 }
 
 void disallow_be_growth() {
 	printf("disallow_be_growth\n");
-	pthread_mutex_lock(&s_mutex);
 	g_be_status = CANNOT_GROW;
-	pthread_mutex_unlock(&s_mutex);
 }
 
 void disable_be() {
 	printf("disable_be\n");
-	pthread_mutex_lock(&s_mutex);
 	g_be_status = DISABLED;
-	pthread_mutex_unlock(&s_mutex);
+	be_kill();
+	delete be;
 }
 
 void enter_cooldown() {
 	printf("cooldown\n");
-	sleep(15);
+	sleep(300); // sleep 5 min
 }
 
 void *top_control(void *threadid) {
@@ -106,9 +121,12 @@ void *top_control(void *threadid) {
 		else if(slack < 0.1) {
 			disallow_be_growth();
 			if(slack < 0.05) {
-				cm->be_cores->remove(cm->be_cores->size() - 2);
+				int num = cm->be_cores->size() - 2; 
+				cm->be_cores->remove(num);
+				cm->lc_cores->add(num);
 			}
 		}
+		// else: enable_be()?
 		sleep(wait_time);
 	}
 }
@@ -125,12 +143,15 @@ void *core_mem_control(void *threadid) {
 	
 void init() {
 	int status;
+
+	g_be_status = CAN_GROW;
+
 	// Init LC and BE task
 	lc = new Task("lc", "lc");	
 	be = new Task("be", "be");	
 	
 	// Init Controller instances
-	cm = new CoreMemController(lc, be, s_mutex, g_be_status); 
+	cm = new CoreMemController(lc, be, g_be_status, slack, load); 
 
 	// Init socket settings
 	port = "10123"; // arbitrarily set
@@ -155,7 +176,6 @@ void init() {
 
 	pthread_join(top_level, (void **)&status);
 	printf("Top Thread End %d\n", status);
-
 }
 
 int main(int argc, char **argv) {

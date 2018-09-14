@@ -4,6 +4,8 @@
 #include <string>
 #include "Task.h"
 
+#define LLC_WAYS 20
+
 class LLC {
 public:
 	int cmin;
