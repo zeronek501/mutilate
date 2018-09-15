@@ -52,7 +52,6 @@ static bool s_send (zmq::socket_t &_socket, const std::string &str) {
 
 void be_exec() {
 	std::string cmd;
-
 	for(int pid : be->pids) {
 		cmd = std::string("sudo kill -CONT ") + std::to_string(pid); // FIXME: preprocess pid string later
 		system(cmd.c_str());

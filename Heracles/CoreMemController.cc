@@ -37,7 +37,7 @@ CoreMemController::CoreMemController(Task *_lc_task, Task *_be_task, int &_be_st
 	be_bw_core_deriv = 1000;
 	prev_grow_status = NO_GROW;
 	for(int i=0;i<30;i++) {
-		offline_model[i] = 0.1 * i; // temporary model;
+		offline_model[i] = 0.05 * i; // temporary model;
 	}
 }
 CoreMemController::~CoreMemController() {
@@ -86,6 +86,7 @@ void CoreMemController::measure_dram_bw() {
 	total_bw = (read_bw + write_bw) / 2; // pcm.x measured time = 2
 	prev_be_bw = be_bw;
 	be_bw = total_bw - lc_bw_model();
+	printf("total_bw : %f, be_bw : %f\n", total_bw, be_bw);
 
 	if(prev_grow_status == GROW_LLC || prev_grow_status == GROW_CORES) {
 		total_bw_deriv = (total_bw_deriv + (total_bw - prev_total_bw)) / 2;
@@ -116,6 +117,7 @@ void CoreMemController::start_loop() {
 	double overage;
 
 	while(true) {
+		printf("repeating...\n");
 		local_be_status = be_status;
 		if(local_be_status == DISABLED) {
 			break;
@@ -123,15 +125,18 @@ void CoreMemController::start_loop() {
 		else {
 			measure_dram_bw();
 			if(total_bw > DRAM_LIMIT) {
+				printf("DRAM BW saturated...\n");
 				overage = total_bw - DRAM_LIMIT;
 				be_cores->remove(overage/be_bw_core_deriv);
 				continue; 
 			}
 			if(local_be_status == CANNOT_GROW) {
+				printf("cannot grow...\n");
 				continue; 
 			}
 			//local_be_status == CAN_GROW
 			if(grow_status == GROW_LLC) {
+				printf("growing LLC...\n");
 				if(total_bw + total_bw_deriv > DRAM_LIMIT) {
 					grow_status = GROW_CORES;	
 				}
@@ -148,6 +153,7 @@ void CoreMemController::start_loop() {
 				}
 			}
 			else if(grow_status == GROW_CORES) {
+				printf("growing cores...\n");
 				double needed = total_bw + be_bw_core_deriv;
 				if(needed > DRAM_LIMIT) {
 					grow_status = GROW_LLC;

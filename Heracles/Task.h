@@ -11,7 +11,8 @@ public:
 	std::string cos; // cos: class of service
 	Task(std::string _cgroup, std::string _cos) : cgroup(_cgroup), cos(_cos)
 	{
-		pids = std::vector<int>();
+		//pids = std::vector<int>();
+		pids.clear();
 	}
 	void add(int pid) {
 		pids.push_back(pid);
