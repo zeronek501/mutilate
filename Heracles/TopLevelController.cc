@@ -66,6 +66,7 @@ void be_kill() {
 }
 
 void poll(double &_lat, double &_load) {
+	printf("polling...\n");
 	zmq::message_t request;
 	my_socket.recv(&request);
 	s_send(my_socket, "ACK");
@@ -103,6 +104,7 @@ void enter_cooldown() {
 }
 
 void *top_control(void *threadid) {
+	printf("top_controlling...\n");
 	while (true) {
 		poll(lat, load);
 		printf("lat: %f, qps: %f\n", lat, load);
@@ -132,6 +134,7 @@ void *top_control(void *threadid) {
 }
 
 void *core_mem_control(void *threadid) {
+	printf("core_mem_controlling...\n");
 	pthread_mutex_lock(&l_mutex);
 	while(lat == -1) {
 		pthread_cond_wait(&cond, &l_mutex);
@@ -142,6 +145,7 @@ void *core_mem_control(void *threadid) {
 }
 	
 void init() {
+	printf("initializing...\n");
 	int status;
 
 	g_be_status = CAN_GROW;
