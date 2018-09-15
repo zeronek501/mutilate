@@ -21,6 +21,8 @@
 #define CANNOT_GROW 1
 #define DISABLED 2
 
+#define LOAD_MAX 250000
+
 zmq::context_t context(1);
 zmq::socket_t my_socket(context, ZMQ_REP);
 std::string port;
@@ -29,6 +31,7 @@ int wait_time;
 int n = 95;
 double nth;
 double lat = -1, load = -1;
+double qps = -1;
 double target_lat = 2000, slack = -1;
 CoreMemController *cm;
 Task *lc, *be;
@@ -167,7 +170,7 @@ void init() {
 		perror("thread create error:");
 		exit(0);
 	}
-	/*
+	
 	if(pthread_create(&core_mem, NULL, core_mem_control, NULL) < 0) {
 		perror("thread create error:");
 		exit(0);
@@ -175,7 +178,7 @@ void init() {
 
 	pthread_join(core_mem, (void **)&status);
 	printf("Core Thread End %d\n", status);
-	*/
+	
 
 	pthread_join(top_level, (void **)&status);
 	printf("Top Thread End %d\n", status);
