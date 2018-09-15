@@ -29,7 +29,7 @@ int wait_time;
 int n = 95;
 double nth;
 double lat = -1, load = -1;
-double target_lat = 100, slack = -1;
+double target_lat = 2000, slack = -1;
 CoreMemController *cm;
 Task *lc, *be;
 
@@ -82,7 +82,6 @@ void poll(double &_lat, double &_load) {
 void enable_be() {
 	printf("enable_be\n");
 	be_exec();
-	cm->set_be(be);
 	g_be_status = CAN_GROW;
 }
 
