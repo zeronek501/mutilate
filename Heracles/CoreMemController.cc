@@ -34,7 +34,7 @@ CoreMemController::CoreMemController(Task *_lc_task, Task *_be_task, int &_be_st
 	be_bw = 0;
 	prev_be_bw = 0;
 	total_bw_deriv = 0;
-	be_bw_core_deriv = 1000;
+	be_bw_core_deriv = 100;
 	prev_grow_status = NO_GROW;
 	for(int i=0;i<30;i++) {
 		offline_model[i] = 0.05 * i; // temporary model;
@@ -56,7 +56,7 @@ void CoreMemController::measure_dram_bw() {
 	string strline;
 	double read_bw, write_bw;
 
-	if((fp = popen("sudo nohup ./pcm.x 2 -i=1", "r")) == NULL) {
+	if((fp = popen("sudo nohup ./pcm.x 2 -i=1 2> log", "r")) == NULL) {
 		printf("popen error\n");
 		exit(1);
 	}
@@ -66,7 +66,6 @@ void CoreMemController::measure_dram_bw() {
 		if(!strncmp(line, marker, 3)) {
 			fgets(line, 1000, fp);
 			fgets(line, 1000, fp);
-			printf("%s\n", line);
 			break;
 		}
 	}
@@ -86,7 +85,7 @@ void CoreMemController::measure_dram_bw() {
 	total_bw = (read_bw + write_bw) / 2; // pcm.x measured time = 2
 	prev_be_bw = be_bw;
 	be_bw = total_bw - lc_bw_model();
-	printf("total_bw : %f, be_bw : %f\n", total_bw, be_bw);
+	printf("total_bw : %f, be_bw : %f, qps : %f\n", total_bw, be_bw, qps);
 
 	if(prev_grow_status == GROW_LLC || prev_grow_status == GROW_CORES) {
 		total_bw_deriv = (total_bw_deriv + (total_bw - prev_total_bw)) / 2;
@@ -100,12 +99,14 @@ void CoreMemController::measure_dram_bw() {
 void CoreMemController::grow_llc_for_be() {
 	be_llc->add(1);
 	lc_llc->remove(1);
+	printf("be_ways: %s, lc_ways: %s\n", be_llc->read_ways().c_str(), lc_llc->read_ways().c_str());
 	prev_grow_status = GROW_LLC;
 }
 
 void CoreMemController::remove_llc_for_be() {
 	be_llc->remove(1);
 	lc_llc->add(1);
+	printf("be_ways: %s, lc_ways: %s\n", be_llc->read_ways().c_str(), lc_llc->read_ways().c_str());
 }
 
 void CoreMemController::set_be(Task* _be) {
@@ -117,7 +118,7 @@ void CoreMemController::start_loop() {
 	double overage;
 
 	while(true) {
-		printf("repeating...\n");
+		printf("repeating...total_bw_deriv: %f, be_bw_core_deriv:%f\n", total_bw_deriv, be_bw_core_deriv);
 		local_be_status = be_status;
 		if(local_be_status == DISABLED) {
 			break;
@@ -161,6 +162,7 @@ void CoreMemController::start_loop() {
 				else if(slack > 0.1) {
 					be_cores->add(1);
 					lc_cores->remove(1);
+					printf("be_cores: %s, lc_cores: %s\n", be_cores->cpus().c_str(), lc_cores->cpus().c_str());
 					prev_grow_status = GROW_CORES;
 				}
 			}

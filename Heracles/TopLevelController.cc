@@ -68,7 +68,7 @@ void be_kill() {
 	}
 }
 
-void poll(double &_lat, double &_load) {
+void poll(double &_lat, double &_qps) {
 	printf("polling...\n");
 	zmq::message_t request;
 	my_socket.recv(&request);
@@ -76,10 +76,8 @@ void poll(double &_lat, double &_load) {
 	memcpy(&_lat, request.data(), sizeof(double));
 	my_socket.recv(&request);
 	s_send(my_socket, "ACK");
-	memcpy(&_load, request.data(), sizeof(double));
+	memcpy(&_qps, request.data(), sizeof(double));
 	
-	printf("measured nth latency is %f\n", _lat);
-	printf("measured load is %f\n", _load);
 }
 
 void enable_be() {
@@ -108,10 +106,9 @@ void *top_control(void *threadid) {
 	printf("top_controlling...\n");
 	while (true) {
 		poll(lat, qps);
-		printf("lat: %f, qps: %f\n", lat, qps);
 		load = qps / LOAD_MAX;
 		slack = (target_lat - lat) / target_lat;
-		printf("target_lat: %f, slack: %f\n", target_lat, slack);
+		printf("nth lat: %f, slack: %f, qps: %f, load: %f\n", lat, slack, qps, load);
 		if(slack < 0) {
 			disable_be();	
 			enter_cooldown();
@@ -159,7 +156,7 @@ void init() {
 	be = new Task("be", "be");	
 	
 	// Init Controller instances
-	cm = new CoreMemController(lc, be, g_be_status, slack, load); 
+	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
 
 	// Init socket settings
 	port = "10123"; // arbitrarily set
