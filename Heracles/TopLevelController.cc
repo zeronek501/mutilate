@@ -53,6 +53,7 @@ static bool s_send (zmq::socket_t &_socket, const std::string &str) {
 void be_exec() {
 	std::string cmd;
 	for(int pid : be->pids) {
+		printf("continuing pid : %d\n", pid);
 		cmd = std::string("sudo kill -CONT ") + std::to_string(pid); // FIXME: preprocess pid string later
 		system(cmd.c_str());
 	}
@@ -60,8 +61,8 @@ void be_exec() {
 
 void be_kill() {
 	std::string cmd;
-
 	for(int pid : be->pids) {
+		printf("stopping pid : %d\n", pid);
 		cmd = std::string("sudo kill -STOP ") + std::to_string(pid); // FIXME: preprocess pid string later
 		system(cmd.c_str());
 	}
@@ -96,7 +97,6 @@ void disable_be() {
 	printf("disable_be\n");
 	g_be_status = DISABLED;
 	be_kill();
-	delete be;
 }
 
 void enter_cooldown() {
@@ -107,8 +107,9 @@ void enter_cooldown() {
 void *top_control(void *threadid) {
 	printf("top_controlling...\n");
 	while (true) {
-		poll(lat, load);
-		printf("lat: %f, qps: %f\n", lat, load);
+		poll(lat, qps);
+		printf("lat: %f, qps: %f\n", lat, qps);
+		load = qps / LOAD_MAX;
 		slack = (target_lat - lat) / target_lat;
 		printf("target_lat: %f, slack: %f\n", target_lat, slack);
 		if(slack < 0) {
@@ -130,6 +131,7 @@ void *top_control(void *threadid) {
 			}
 		}
 		// else: enable_be()?
+		pthread_cond_signal(&cond);
 		sleep(wait_time);
 	}
 }
@@ -142,6 +144,7 @@ void *core_mem_control(void *threadid) {
 	}
 	pthread_mutex_unlock(&l_mutex);
 
+	printf("core_mem_repeating...\n");
 	cm->start_loop();
 }
 	
