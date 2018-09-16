@@ -17,9 +17,16 @@ Cores::Cores(int _cmin, int _cmax, Task *_task) : cmin(_cmin), cmax(_cmax), task
 
 void Cores::alloc_cpuset(string cgroup, string value) {
 	string cpus_path;
+	string mems_path;
 	cpus_path = string("/sys/fs/cgroup/cpuset/") + cgroup + string("/cpuset.cpus");
 	printf("allocating cpuset : %s\n", cpus_path.c_str());
 	if(s_write(cpus_path, value)) {
+		fprintf(stderr, "alloc_cpuset error\n");
+		exit(1);
+	}
+	mems_path = string("/sys/fs/cgroup/cpuset/") + cgroup + string("/cpuset.mems");
+	printf("allocating cpuset : %s\n", cpus_path.c_str());
+	if(s_write(mems_path, "0")) {
 		fprintf(stderr, "alloc_cpuset error\n");
 		exit(1);
 	}

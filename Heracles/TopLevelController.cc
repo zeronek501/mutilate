@@ -76,7 +76,6 @@ void be_exec() {
 	pid = fork();
 	if(pid == 0) { // child process
 		int mypid = getpid();		
-		s_write("/sys/fs/cgroup/cpuset/be/cpuset.cpus", std::to_string());
 		s_write("/sys/fs/cgroup/cpuset/be/tasks", std::to_string(mypid));
 		s_write("/sys/fs/resctrl/be/tasks", std::to_string(mypid));
 		execl("./setting/run_inmemory_solo.sh", "./setting/run_inmemory_solo.sh", NULL);
@@ -194,15 +193,16 @@ void init() {
 	s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/be");
 	s_sudo_cmd("mkdir /sys/fs/resctrl/be");
 
+	// Init LC and BE task
+	lc = new Task("lc", "lc");	
+	be = new Task("be", "be");	
+
 	// Init Controller instances
 	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
 
 	lc_exec();
 	be_exec();
 
-	// Init LC and BE task
-	lc = new Task("lc", "lc");	
-	be = new Task("be", "be");	
 	/*
 
 	// Init socket settings
