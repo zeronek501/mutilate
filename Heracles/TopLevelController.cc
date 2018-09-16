@@ -76,9 +76,8 @@ void be_exec() {
 	pid = fork();
 	if(pid == 0) { // child process
 		int mypid = getpid();		
-		s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/be");
+		s_write("/sys/fs/cgroup/cpuset/be/cpuset.cpus", std::to_string());
 		s_write("/sys/fs/cgroup/cpuset/be/tasks", std::to_string(mypid));
-		s_sudo_cmd("mkdir /sys/fs/resctrl/be");
 		s_write("/sys/fs/resctrl/be/tasks", std::to_string(mypid));
 		execl("./setting/run_inmemory_solo.sh", "./setting/run_inmemory_solo.sh", NULL);
 	}
@@ -94,9 +93,7 @@ void lc_exec() {
 	pid = fork();
 	if(pid == 0) { // child process
 		int mypid = getpid();		
-		s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/lc");
 		s_write("/sys/fs/cgroup/cpuset/lc/tasks", std::to_string(mypid));
-		s_sudo_cmd("mkdir /sys/fs/resctrl/lc");
 		s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
 		execlp("memcached", "memcached", "-t", "4", "-c", "32768", "-p", "11212");
 	}
@@ -191,6 +188,15 @@ void init() {
 
 	g_be_status = CAN_GROW;
 
+	// Create cgroup and cos
+	s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/lc");
+	s_sudo_cmd("mkdir /sys/fs/resctrl/lc");
+	s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/be");
+	s_sudo_cmd("mkdir /sys/fs/resctrl/be");
+
+	// Init Controller instances
+	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
+
 	lc_exec();
 	be_exec();
 
@@ -198,8 +204,6 @@ void init() {
 	lc = new Task("lc", "lc");	
 	be = new Task("be", "be");	
 	/*
-	// Init Controller instances
-	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
 
 	// Init socket settings
 	port = "10123"; // arbitrarily set
