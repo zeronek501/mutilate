@@ -97,15 +97,19 @@ void CoreMemController::measure_dram_bw() {
 }
 
 void CoreMemController::grow_llc_for_be() {
-	be_llc->add(1);
-	lc_llc->remove(1);
+	if(lc_llc->size() > 1) {
+		be_llc->add(1);
+		lc_llc->remove(1);
+	}
 	printf("be_ways: %s, lc_ways: %s\n", be_llc->read_ways().c_str(), lc_llc->read_ways().c_str());
 	prev_grow_status = GROW_LLC;
 }
 
 void CoreMemController::remove_llc_for_be() {
-	be_llc->remove(1);
-	lc_llc->add(1);
+	if(be_llc->size() > 1) {
+		be_llc->remove(1);
+		lc_llc->add(1);
+	}
 	printf("be_ways: %s, lc_ways: %s\n", be_llc->read_ways().c_str(), lc_llc->read_ways().c_str());
 }
 
@@ -160,8 +164,10 @@ void CoreMemController::start_loop() {
 					grow_status = GROW_LLC;
 				}
 				else if(slack > 0.1) {
-					be_cores->add(1);
-					lc_cores->remove(1);
+					if(lc_cores->size() > 1) {
+						be_cores->add(1);
+						lc_cores->remove(1);
+					}
 					printf("be_cores: %s, lc_cores: %s\n", be_cores->cpus().c_str(), lc_cores->cpus().c_str());
 					prev_grow_status = GROW_CORES;
 				}

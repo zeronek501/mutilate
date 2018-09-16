@@ -36,6 +36,7 @@ void Cores::add(int amt) {
 	newcpus = to_string(cmin) + "-" + to_string(cmax); 
 	alloc_cpuset(task->cgroup, newcpus);
 }
+
 int Cores::size() {
 	return cmax - cmin + 1;
 }

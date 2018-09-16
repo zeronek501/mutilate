@@ -11,7 +11,7 @@
 
 using namespace std;
 
-LLC::LLC(int _cmin, int _cmax, Task * _task) : cmin(_cmin), cmax(_cmax), task(_task) {
+LLC::LLC(int _wmin, int _wmax, Task * _task) : wmin(_wmin), wmax(_wmax), task(_task) {
 	string ways;
 	ways = string("\x4c\x33\x3a\x30\x3d") + calc_ways();
 	alloc_ways(task->cos, ways);
@@ -28,23 +28,27 @@ void LLC::alloc_ways(string cos, string value) {
 
 void LLC::add(int amt) {
 	string newways;
-	if(cmin == 0) { // change cmax
-		cmax = MIN(LLC_WAYS, cmax + amt);
+	if(wmin == 0) { // change wmax
+		wmax = MIN(LLC_WAYS, wmax + amt);
 	}
-	else { // change cmin
-		cmin = MAX(0, cmin - amt);
+	else { // change wmin
+		wmin = MAX(0, wmin - amt);
 	}
 	newways = string("L3:0=") + calc_ways();
 	alloc_ways(task->cos, newways);
 }
 
+int LLC::size() {
+	return wmax - wmin + 1;
+}
+
 void LLC::remove(int amt) {
 	string newways;
-	if(cmin == 0) { // change cmax
-		cmax = MAX(cmin, cmax - amt);
+	if(wmin == 0) { // change wmax
+		wmax = MAX(wmin, wmax - amt);
 	}
-	else { // change cmin
-		cmin = MIN(cmax, cmin + amt);
+	else { // change wmin
+		wmin = MIN(wmax, wmin + amt);
 	}
 	newways = string("L3:0=") + calc_ways();
 	alloc_ways(task->cos, newways);
@@ -64,7 +68,7 @@ string LLC::calc_ways() {
 	int bits = 0, i;
 	for(i = 0;i < LLC_WAYS; i++) { 
 		bits*=2;
-		if(i >= cmin && i <= cmax) {
+		if(i >= wmin && i <= wmax) {
 			bits += 1;
 		}
 	}

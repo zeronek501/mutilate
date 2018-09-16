@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 	string strline;
 	double read_bw, write_bw;
 
-	if((fp = popen("sudo nohup ./pcm.x 5 -i=1", "r")) == NULL) {
+	if((fp = popen("sudo nohup ./pcm.x 5 -i=1 2> log", "r")) == NULL) {
 		return 1;
 	}
 

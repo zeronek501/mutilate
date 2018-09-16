@@ -25,10 +25,8 @@ int s_write(std::string filepath, std::string value) {
 
 	std::string mycmd;
 	int res;
-	mycmd = "sudo su -c \"/bin/echo " + value + " > " + filepath + "\"";
-	res = system(mycmd.c_str());
-		
-	return 0;
+	res = s_sudo_cmd("/bin/echo " + value + " > " + filepath);
+	return res;
 	
 }
 
@@ -39,4 +37,14 @@ int s_read(std::string filepath, std::string &value) {
 	fs.close();
 	return 0;
 }
+
+int s_sudo_cmd(std::string cmd) {
+	std::string mycmd;
+	int res;
+	mycmd = "sudo su -c \"" + cmd + "\"";
+	res = system(mycmd.c_str());
+
+	return res;
+}
+
 

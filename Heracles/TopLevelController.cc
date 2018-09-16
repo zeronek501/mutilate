@@ -13,6 +13,7 @@
 
 #include "CoreMemController.h"
 #include "Task.h"
+#include "Util.h"
 
 // libzmq is necessary
 #include <zmq.hpp>
@@ -50,21 +51,58 @@ static bool s_send (zmq::socket_t &_socket, const std::string &str) {
   return _socket.send(message);
 }
 
-void be_exec() {
+void be_unpause() {
+	system(std::string("docker unpause inmemory").c_str());
+}
+
+void be_pause() {
 	std::string cmd;
-	for(int pid : be->pids) {
-		printf("continuing pid : %d\n", pid);
-		cmd = std::string("sudo kill -CONT ") + std::to_string(pid); // FIXME: preprocess pid string later
-		system(cmd.c_str());
+	int core_num = cm->be_cores->size() - 1; 
+	int llc_num = cm->be_llc->size() - 1; 
+	if(core_num > 0) {
+		cm->be_cores->remove(core_num);
+		cm->lc_cores->add(core_num);
+	}
+	if(llc_num > 0) {
+		cm->be_llc->remove(llc_num);
+		cm->lc_llc->add(llc_num);
+	}
+	system(std::string("docker pause inmemory").c_str());
+}
+
+void be_exec() {
+	printf("executing be\n");
+	int pid;
+	pid = fork();
+	if(pid == 0) { // child process
+		int mypid = getpid();		
+		s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/be");
+		s_write("/sys/fs/cgroup/cpuset/be/tasks", std::to_string(mypid));
+		s_sudo_cmd("mkdir /sys/fs/resctrl/be");
+		s_write("/sys/fs/resctrl/be/tasks", std::to_string(mypid));
+		execl("./setting/run_inmemory_solo.sh", "./setting/run_inmemory_solo.sh", NULL);
+	}
+	else if(pid == -1) { // fork error
+		printf("fork error!\n");
+		exit(1);
 	}
 }
 
-void be_kill() {
-	std::string cmd;
-	for(int pid : be->pids) {
-		printf("stopping pid : %d\n", pid);
-		cmd = std::string("sudo kill -STOP ") + std::to_string(pid); // FIXME: preprocess pid string later
-		system(cmd.c_str());
+void lc_exec() {
+	printf("executing lc\n");
+	int pid;
+	pid = fork();
+	if(pid == 0) { // child process
+		int mypid = getpid();		
+		s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/lc");
+		s_write("/sys/fs/cgroup/cpuset/lc/tasks", std::to_string(mypid));
+		s_sudo_cmd("mkdir /sys/fs/resctrl/lc");
+		s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
+		execlp("memcached", "memcached", "-t", "4", "-c", "32768", "-p", "11212");
+	}
+	else if(pid == -1) { // fork error
+		printf("fork error!\n");
+		exit(1);
 	}
 }
 
@@ -82,7 +120,7 @@ void poll(double &_lat, double &_qps) {
 
 void enable_be() {
 	printf("enable_be\n");
-	be_exec();
+	be_unpause();
 	g_be_status = CAN_GROW;
 }
 
@@ -94,7 +132,7 @@ void disallow_be_growth() {
 void disable_be() {
 	printf("disable_be\n");
 	g_be_status = DISABLED;
-	be_kill();
+	be_pause();
 }
 
 void enter_cooldown() {
@@ -123,8 +161,10 @@ void *top_control(void *threadid) {
 			disallow_be_growth();
 			if(slack < 0.05) {
 				int num = cm->be_cores->size() - 2; 
-				cm->be_cores->remove(num);
-				cm->lc_cores->add(num);
+				if(num > 0) {
+					cm->be_cores->remove(num);
+					cm->lc_cores->add(num);
+				}
 			}
 		}
 		// else: enable_be()?
@@ -151,10 +191,13 @@ void init() {
 
 	g_be_status = CAN_GROW;
 
+	lc_exec();
+	be_exec();
+
 	// Init LC and BE task
 	lc = new Task("lc", "lc");	
 	be = new Task("be", "be");	
-	
+	/*
 	// Init Controller instances
 	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
 
@@ -181,6 +224,7 @@ void init() {
 
 	pthread_join(top_level, (void **)&status);
 	printf("Top Thread End %d\n", status);
+	*/
 }
 
 int main(int argc, char **argv) {

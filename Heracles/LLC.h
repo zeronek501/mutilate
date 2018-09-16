@@ -8,11 +8,12 @@
 
 class LLC {
 public:
-	int cmin;
-	int cmax;
+	int wmin;
+	int wmax;
 	Task *task;
-	LLC(int _cmin, int _cmax, Task *_task);
+	LLC(int _wmin, int _wmax, Task *_task);
 	void add(int amt);
+	int size();
 	void remove(int amt);
 	std::string calc_ways();
 	std::string read_ways();
