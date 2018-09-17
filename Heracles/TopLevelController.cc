@@ -200,7 +200,7 @@ void init() {
 	// Init Controller instances
 	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
 
-	lc_exec();
+	//lc_exec();
 	be_exec();
 
 	/*
