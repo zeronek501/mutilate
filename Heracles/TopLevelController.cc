@@ -24,8 +24,8 @@
 
 #define LOAD_MAX 250000
 
-zmq::context_t context(1);
-zmq::socket_t my_socket(context, ZMQ_REP);
+zmq::context_t *context = NULL;
+zmq::socket_t *my_socket = NULL;
 std::string port;
 int wait_time;
 
@@ -105,11 +105,11 @@ void lc_exec() {
 void poll(double &_lat, double &_qps) {
 	printf("polling...\n");
 	zmq::message_t request;
-	my_socket.recv(&request);
-	s_send(my_socket, "ACK");
+	my_socket->recv(&request);
+	s_send(*my_socket, "ACK");
 	memcpy(&_lat, request.data(), sizeof(double));
-	my_socket.recv(&request);
-	s_send(my_socket, "ACK");
+	my_socket->recv(&request);
+	s_send(*my_socket, "ACK");
 	memcpy(&_qps, request.data(), sizeof(double));
 	
 }
@@ -206,9 +206,11 @@ void init() {
 	/*
 
 	// Init socket settings
+	context = new zmq::context_t(1);
+	my_socket = new zmq::socket_t(*context, ZMQ_REP);
 	port = "10123"; // arbitrarily set
 	wait_time = 15;
-	my_socket.bind((std::string("tcp://*:") + port).c_str());
+	my_socket->bind((std::string("tcp://*:") + port).c_str());
 	
 	// Create pthreads	
 	pthread_t top_level, core_mem;
