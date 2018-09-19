@@ -131,7 +131,7 @@ void lc_init() {
 
 	// create cgroup cos
 	s_sudo_cmd("mkdir -p /sys/fs/cgroup/cpuset/lc");
-	//s_sudo_cmd("mkdir -p /sys/fs/resctrl/lc");
+	s_sudo_cmd("mkdir -p /sys/fs/resctrl/lc");
 
 	// allocate cores and ways 
 	lc = new Task("lc", "lc");	
@@ -147,7 +147,7 @@ void lc_init() {
 		s_write("/sys/fs/cgroup/cpuset/lc/cpuset.cpus", "0");
 		s_write("/sys/fs/cgroup/cpuset/lc/cpuset.mems", "0");
 		s_write("/sys/fs/cgroup/cpuset/lc/tasks", std::to_string(mypid));
-		//s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
+		s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
 		system("sudo pkill -9 memcached");
 		execlp("memcached", "memcached", "-t", "4", "-c", "32768", "-p", "11212", NULL);
 	}
@@ -178,7 +178,7 @@ void be_init() {
 	printf("be_init..\n");
 
 	// docker run and pause -> cgroup is created based on their cid.
-	//s_sudo_cmd("mkdir -p /sys/fs/resctrl/be");
+	s_sudo_cmd("mkdir -p /sys/fs/resctrl/be");
 	system(std::string("./setting/set_inmemory_solo.sh").c_str());
 	s_read("./cids.txt", be_cgroup);
 	printf("be_cgroup: %s\n", be_cgroup.c_str());
@@ -195,7 +195,7 @@ void be_init() {
 		fs >> value;
 		printf("%s\n",value.c_str());
 		be->pids.push_back(std::stoi(value));
-		//s_write(resctrlpath, value);
+		s_write(resctrlpath, value);
 	}
 	fs.close();
 
