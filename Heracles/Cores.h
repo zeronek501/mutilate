@@ -15,8 +15,7 @@ public:
 	void add(int amt);
 	void remove(int amt);
 	int size();
-	std::string cpus();
-
+	std::string cpus(); 
 private:
 	void alloc_cpuset(std::string cgroup, std::string value);
 };

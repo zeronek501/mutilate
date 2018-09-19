@@ -10,6 +10,9 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <fstream>
+#include <iostream>
+#include <vector>
 
 #include <vector>
 
@@ -79,7 +82,7 @@ void be_exec() {
 	if(pid == 0) { // child process
 		int mypid = getpid();		
 		s_write("/sys/fs/cgroup/cpuset/be/tasks", std::to_string(mypid));
-		s_write("/sys/fs/resctrl/be/tasks", std::to_string(mypid));
+		system("./setting/set_inmemory_solo.sh");
 		execl("/home/janux/mutilate/Heracles/setting/run_inmemory_solo.sh", "run_inmemory_solo.sh", NULL);
 	}
 	else if(pid == -1) { // fork error
@@ -88,58 +91,6 @@ void be_exec() {
 	}
 }
 
-void lc_exec() {
-	printf("executing lc\n");
-	int pid;
-	int status;
-	pid = fork();
-	if(pid == 0) { // child process
-		int mypid = getpid();		
-		printf("mypid: %d\n", mypid);
-		s_write("/sys/fs/cgroup/cpuset/lc/tasks", std::to_string(mypid));
-		s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
-		execlp("memcached", "memcached", "-t", "4", "-c", "32768", "-p", "11212", NULL);
-	}
-	else if(pid == -1) { // fork error
-		printf("fork error!\n");
-		exit(1);
-	}
-	else {
-		//waitpid(pid, &status, 0);
-	}
-
-}
-
-void lc_init() {
-}
-	
-
-void add_pids() {
-	// LC
-	string value;
-	std::fstream fs;
-	string filepath = string("/sys/fs/cgroup/lc/tasks");
-	fs.open(filepath, std::fstream::in);	
-	while(!fs.eof()) {
-		fs >> value;
-		lc->pids.push_back(value);
-	}
-
-	string filepath = string("./cid.txt");
-	fs.open(filepath, std::fstream::in);	
-	fs >> value;
-	be->cgroup = string("/be/") + value;
-
-	std::fstream fs;
-	string filepath = string("/sys/fs/cgroup/be/tasks");
-	fs.open(filepath, std::fstream::in);	
-	while(!fs.eof()) {
-		fs >> value;
-		be->pids.push_back(value);
-	}
-	fs.close();
-
-}
 
 void poll(double &_lat, double &_qps) {
 	printf("polling...\n");
@@ -172,6 +123,84 @@ void disable_be() {
 void enter_cooldown() {
 	printf("cooldown\n");
 	sleep(300); // sleep 5 min
+}
+
+void lc_init() {
+	
+	printf("lc_init..\n");
+
+	// create cgroup cos
+	s_sudo_cmd("mkdir -p /sys/fs/cgroup/cpuset/lc");
+	//s_sudo_cmd("mkdir -p /sys/fs/resctrl/lc");
+
+	// allocate cores and ways 
+	lc = new Task("lc", "lc");	
+
+	// fork and exec process and attach the task pids to cgroup and resctrl
+	printf("executing lc\n");
+	int pid;
+	int status;
+	pid = fork();
+	if(pid == 0) { // child process
+		int mypid = getpid();		
+		printf("mypid: %d\n", mypid);
+		s_write("/sys/fs/cgroup/cpuset/lc/cpuset.cpus", "0");
+		s_write("/sys/fs/cgroup/cpuset/lc/cpuset.mems", "0");
+		s_write("/sys/fs/cgroup/cpuset/lc/tasks", std::to_string(mypid));
+		//s_write("/sys/fs/resctrl/lc/tasks", std::to_string(mypid));
+		system("sudo pkill -9 memcached");
+		execlp("memcached", "memcached", "-t", "4", "-c", "32768", "-p", "11212", NULL);
+	}
+	else if(pid == -1) { // fork error
+		printf("fork error!\n");
+		exit(1);
+	}
+	else {
+		sleep(5);
+		std::string value;
+		std::fstream fs;
+		std::string filepath = std::string("/sys/fs/cgroup/cpuset/lc/tasks");
+		fs.open(filepath, std::fstream::in);	
+		while(!fs.eof()) {
+			fs >> value;
+			printf("%s\n",value.c_str());
+			lc->pids.push_back(std::stoi(value));
+		}
+		//waitpid(pid, &status, 0);
+	}
+}
+
+void be_init() {
+	std::string be_cgroup;
+	std::fstream fs;
+	std::string value;
+
+	printf("be_init..\n");
+
+	// docker run and pause -> cgroup is created based on their cid.
+	//s_sudo_cmd("mkdir -p /sys/fs/resctrl/be");
+	system(std::string("./setting/set_inmemory_solo.sh").c_str());
+	s_read("./cids.txt", be_cgroup);
+	printf("be_cgroup: %s\n", be_cgroup.c_str());
+
+	be = new Task(std::string("docker/") + be_cgroup, "be");	
+
+	// attach task pids. copy to resctrl tasks
+
+	std::string filepath = std::string("/sys/fs/cgroup/cpuset/") + be->cgroup + std::string("/tasks");
+	std::string resctrlpath = std::string("/sys/fs/resctrl/be/tasks");
+	fs.open(filepath, std::fstream::in);	
+
+	while(!fs.eof()) {
+		fs >> value;
+		printf("%s\n",value.c_str());
+		be->pids.push_back(std::stoi(value));
+		//s_write(resctrlpath, value);
+	}
+	fs.close();
+
+	enable_be();
+	
 }
 
 void *top_control(void *threadid) {
@@ -223,28 +252,12 @@ void init() {
 	printf("initializing...\n");
 	int status;
 
-	be_init();
-	lc_init();
-	// Create cgroup and cos
-	std::string be_cgroup;
-	s_sudo_cmd("mkdir /sys/fs/cgroup/cpuset/lc");
-	s_sudo_cmd("mkdir /sys/fs/resctrl/lc");
-	system(string("./setting/set_inmemory_solo.sh").c_str());
-	s_read("./cids.txt", be_cgroup);
-	printf("%s\n", be_cgroup.c_str());
-	
 	// Init LC and BE task
-	lc = new Task("lc", "lc");	
-	be = new Task(std::string("docker/") + be_cgroup, "be");	
+	lc_init();
+	be_init();
 
 	// Init Controller instances
 	cm = new CoreMemController(lc, be, g_be_status, slack, qps); 
-
-	lc_exec();
-	be_exec();
-
-	be_correct();
-	
 
 	// Init socket settings
 	context = new zmq::context_t(1);
